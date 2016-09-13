@@ -1,0 +1,26 @@
+crontab -u <user> -l
+# m h  dom mon dow   command
+00 22 * * 1-5 sh /storage/backup/dbbackup-daily.sh >/dev/null 2>&1
+
+cat /storage/backup/dbbackup-daily.sh
+
+now="$(date +'%Y_%m_%d_%H_%M_%S')"
+filename="phabricator_backup_$now".sql.gz
+backupfolder="/storage/backup/code/"
+fullpathbackupfile="$backupfolder/$filename"
+logfile="$backupfolder/"phabricator_backup_log_"$(date +'%Y_%m')".txt
+
+
+echo "mysqldump started at $(date +'%d-%m-%Y %H:%M:%S')" >> $logfile
+/var/www/code/phabricator/bin/storage dump | gzip > $fullpathbackupfile
+echo "mysqldump finished at $(date +'%d-%m-%Y %H:%M:%S')" >> $logfile
+
+find $backupfilder -name phabricator_backup_* -mtime +8 -exec rm {} \;
+echo "old files deleted" >> "$logfile"
+
+echo "operation finished at $(date +'%d-%m-%Y %H:%M:%S')" >> $logfile
+echo "*****************" >> "$logfile"
+
+tail -n 5 $logfile | mail -s "www.ebear.co.za backup" johanv@tru-cape.co.za
+
+exit 0
